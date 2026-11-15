@@ -4,9 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Lastzonen Deutschland</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* Layout: zweispaltig – Karte links, Eingaben + Ergebnisse rechts; einspaltig auf dem Handy. */
 :root{
@@ -67,6 +66,10 @@ tr.key td.v{font-weight:500;color:var(--fg);background:var(--accent-bg);padding-
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 footer{padding-block:4px 20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   color:var(--muted);font-size:.8rem;max-width:80ch}
+#mapConsent{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  padding:16px;text-align:center;color:var(--muted);font-size:.9rem;background:var(--panel);border-radius:6px}
+#mapConsent p{margin:0;max-width:46ch}
+#mapConsent a,.hint a{color:inherit}
 #printhead{display:none}
 #mapcap{display:none}
 @media print{
@@ -78,6 +81,7 @@ footer{padding-block:4px 20px;padding-left:max(16px,env(safe-area-inset-left,0px
   .side{order:2}
   #map{width:170mm!important;height:85mm!important;min-height:0;border:0.3mm solid #888;border-radius:0}
   #mapcap{display:block;font-size:9pt;color:#444}
+  #map:has(#mapConsent){display:none!important}
   section{border:none;padding:0 0 8px;break-inside:avoid}
   body{background:#fff;color:#000}
 }
@@ -94,11 +98,20 @@ footer{padding-block:4px 20px;padding-left:max(16px,env(safe-area-inset-left,0px
   <div id="printhead"><h1 style="margin:0">Lastannahmen Schnee, Wind und Erdbeben</h1><div id="printdate"></div></div>
   <div class="mapcol">
     <form class="search" id="searchForm">
-      <input id="q" type="search" placeholder="Ort, PLZ oder Adresse" value="Coburg" autocomplete="off">
+      <input id="q" type="search" placeholder="Ort, PLZ oder Adresse" autocomplete="off">
       <button class="primary" type="submit">Suchen</button>
     </form>
-    <div id="map" aria-label="Karte zur Standortwahl"></div>
-    <p class="hint">Auf die Karte klicken, um den Standort zu setzen. Höhe und Gemeinde werden automatisch ermittelt.</p>
+    <div id="map" aria-label="Karte zur Standortwahl">
+      <div id="mapConsent">
+        <p>Die Karte wird vom Bundesamt für Kartographie und Geodäsie (BKG) geladen.
+          Dabei werden die IP-Adresse und der angezeigte Kartenausschnitt an das BKG übertragen.</p>
+        <button class="primary" type="button" id="mapLoad">Karte laden</button>
+        <p><a href="datenschutz.html">Datenschutzhinweis</a></p>
+      </div>
+    </div>
+    <p class="hint">Ort suchen oder auf die Karte klicken, um den Standort zu setzen. Gemeinde und Geländehöhe werden dann
+      bei Nominatim (OpenStreetMap) und Open-Meteo abgefragt; dabei werden der Suchbegriff bzw. die Koordinaten übertragen
+      (<a href="datenschutz.html">Datenschutz</a>).</p>
     <p id="mapcap"></p>
   </div>
 
@@ -162,18 +175,16 @@ footer{padding-block:4px 20px;padding-left:max(16px,env(safe-area-inset-left,0px
     <section id="quellen">
       <h2>Datenquellen</h2>
       <ul class="notes">
-        <li>Zonenzuordnung: Tabellen des Deutschen Instituts für Bautechnik (<a href="https://www.dibt.de/de/wir-bieten/technische-baubestimmungen">DIBt</a>) –
-          Zuordnung der Schneelastzonen nach Verwaltungsgrenzen (Stand <span id="stand-schnee">07.02.2023</span>),
-          Zuordnung der Windzonen nach Verwaltungsgrenzen (Stand <span id="stand-wind">02.06.2022</span>),
-          Zuordnung der Erdbebenzonen und Untergrundklassen nach Verwaltungsgrenzen (Stand <span id="stand-erdbeben">02.06.2022</span>).</li>
+        <li>Zuordnung der Schneelastzonen nach Verwaltungsgrenzen, <a href="https://www.dibt.de/de/wir-bieten/technische-baubestimmungen">DIBt</a>, Stand <span id="stand-schnee">07.02.2023</span></li>
+        <li>Zuordnung der Windzonen nach Verwaltungsgrenzen, DIBt, Stand <span id="stand-wind">02.06.2022</span></li>
+        <li>Zuordnung der Erdbebenzonen und Untergrundklassen, DIBt, Stand <span id="stand-erdbeben">02.06.2022</span></li>
         <li>Karte: TopPlusOpen. Kartendarstellung: © <a href="https://www.bkg.bund.de">BKG</a> (<span id="bkgJahr">2026</span>)
           <a href="https://www.govdata.de/dl-de/by-2-0">dl-de/by-2-0</a>, Datenquellen:
-          <a href="https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_topplusopen.html">sgx.geodatenzentrum.de/…/datenquellen_topplusopen.html</a>.
-          Ersatzkarte bei Ausfall: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende.</li>
-        <li>Ortssuche: <a href="https://nominatim.org">Nominatim</a>, bei Ausfall <a href="https://photon.komoot.io">Photon</a> (komoot).
-          Daten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende, Open Database License (ODbL).</li>
+          <a href="https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_topplusopen.html">sgx.geodatenzentrum.de/…/datenquellen_topplusopen.html</a></li>
+        <li>Ortssuche: <a href="https://nominatim.org">Nominatim</a>.
+          Daten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende, Open Database License (ODbL)</li>
         <li>Geländehöhe: <a href="https://open-meteo.com/">Höhendaten von Open-Meteo.com</a>
-          (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>), Copernicus DEM GLO-90, © ESA/Copernicus.</li>
+          (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>), Copernicus DEM GLO-90, © ESA/Copernicus</li>
       </ul>
     </section>
   </div>
@@ -184,6 +195,7 @@ footer{padding-block:4px 20px;padding-left:max(16px,env(safe-area-inset-left,0px
   Zonenzuordnung verbindlich nach den DIBt-Tabellen und dem Landesrecht prüfen.
   <span class="noprint">Karte: TopPlusOpen © <a href="https://www.bkg.bund.de">BKG</a> <a href="https://www.govdata.de/dl-de/by-2-0">dl-de/by-2-0</a> ·
   Ortssuche: Nominatim, Daten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende ·
-  Geländehöhe: <a href="https://open-meteo.com/">Open-Meteo.com</a> · Einzelheiten unter <a href="#quellen">Datenquellen</a>.</span>
+  Geländehöhe: <a href="https://open-meteo.com/">Open-Meteo.com</a> · Einzelheiten unter <a href="#quellen">Datenquellen</a> ·
+  <a href="datenschutz.html">Datenschutz</a>.</span>
 </footer>
 

@@ -17,7 +17,7 @@ head = read("page_head.html")
 data = read("zonen.json").replace("</", "<\\/")
 app = read("app.js")
 html = (head + '<script id="zonen" type="application/json">' + data + '</script>\n'
-        '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>\n<script>\n' + app + '</script>\n</body>\n</html>\n')
+        '<script src="vendor/leaflet/leaflet.js"></script>\n<script>\n' + app + '</script>\n</body>\n</html>\n')
 with open(os.path.join(d, "index.html"), "w", encoding="utf-8", newline="\n") as f:
     f.write(html)
 print(len(html))

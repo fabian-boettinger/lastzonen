@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Datenschutz – Lastzonen Deutschland</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{
+  --bg:#f3f5f7; --panel:#ffffff; --fg:#1b2430; --muted:#5b6878; --line:#d5dce4;
+  --accent:#b8860b; --accent-bg:#fbf3dc; --warn:#a33a2a;
+  --sans:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12171d; --panel:#1a212a; --fg:#e4e9ef; --muted:#93a1b1; --line:#2c3743;
+  --accent:#e0b44a; --accent-bg:#2b2617; --warn:#e07a68; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171d; --panel:#1a212a; --fg:#e4e9ef; --muted:#93a1b1; --line:#2c3743;
+  --accent:#e0b44a; --accent-bg:#2b2617; --warn:#e07a68; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans)}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;padding-block:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  border-bottom:1px solid var(--line);background:var(--panel)}
+header h1{margin:0;font-size:1.25rem;font-weight:700;letter-spacing:.01em}
+header a{color:var(--muted);font-size:.9rem}
+main{display:flex;flex-direction:column;gap:16px;max-width:80ch;padding-block:16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+section{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+section h2{margin:0 0 10px;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+section p{margin:0 0 8px}
+section p:last-child{margin-bottom:0}
+dl{margin:0;display:grid;grid-template-columns:minmax(0,9em) minmax(0,1fr);gap:4px 14px}
+dl + h3{margin-top:16px}
+h3{margin:0 0 6px;font-size:1rem;font-weight:600}
+dt{color:var(--muted)}
+dd{margin:0}
+@media (max-width:420px){dl{grid-template-columns:minmax(0,1fr)} dd{margin-bottom:6px}}
+a{color:inherit}
+footer{padding-block:4px 20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  color:var(--muted);font-size:.8rem;max-width:80ch}
+</style>
+</head>
+<body>
+<header>
+  <h1>Datenschutz</h1>
+  <a href="index.html">← Lastzonen Deutschland</a>
+</header>
+
+<main>
+  <section>
+    <h2>Verantwortlich</h2>
+    <p>Fabian Böttinger<br>[Kontaktangabe folgt]</p>
+  </section>
+
+  <section>
+    <h2>Abruf der Seite</h2>
+    <p>Die Seite ist für die Bereitstellung über GitHub Pages vorgesehen, einen Dienst der GitHub, Inc. (USA).
+      Beim Abruf verarbeitet GitHub technisch bedingt die IP-Adresse; nach Angaben von GitHub wird sie zu Sicherheitszwecken gespeichert.
+      Auf diese Daten habe ich keinen Zugriff.</p>
+    <p>Schriften und die Kartenbibliothek Leaflet werden von derselben Adresse geladen wie die Seite, nicht von fremden Servern.</p>
+  </section>
+
+  <section>
+    <h2>Cookies, Tracking, Speicherung</h2>
+    <p>Die Seite setzt keine Cookies, enthält kein Tracking und keine Analyse.</p>
+    <p>Eingaben und Ergebnisse werden nur im Browser verarbeitet. Die Seite legt nichts im Browser ab (kein localStorage);
+      nach dem Schließen oder Neuladen sind die Eingaben weg. Übertragen wird nur, was unten bei den externen Diensten steht.</p>
+  </section>
+
+  <section>
+    <h2>Externe Dienste</h2>
+    <p>Karte, Ortssuche und Geländehöhe kommen von fremden Anbietern. Sie werden erst nach einer eigenen Aktion angesprochen:
+      Karte mit „Karte laden“ oder der ersten Ortssuche, Ortssuche und Geländehöhe beim Suchen oder beim Klick auf die Karte.
+      Der Browser stellt die Anfrage direkt an den Anbieter und überträgt dabei neben den genannten Daten die IP-Adresse
+      und in der Regel die Adresse dieser Seite (Referer). Ohne diese Dienste lassen sich die Zonen von Hand wählen.</p>
+
+    <h3>Karte</h3>
+    <dl>
+      <dt>Anbieter</dt><dd>Bundesamt für Kartographie und Geodäsie (<a href="https://www.bkg.bund.de">BKG</a>), Dienst TopPlusOpen</dd>
+      <dt>Zweck</dt><dd>Anzeige der Karte zur Standortwahl</dd>
+      <dt>Übertragen</dt><dd>IP-Adresse, angezeigter Kartenausschnitt und Zoomstufe</dd>
+    </dl>
+
+    <h3>Ortssuche</h3>
+    <dl>
+      <dt>Anbieter</dt><dd>OpenStreetMap Foundation, Dienst <a href="https://nominatim.org">Nominatim</a>
+        (<a href="https://osmfoundation.org/wiki/Privacy_Policy">Datenschutzerklärung</a>)</dd>
+      <dt>Zweck</dt><dd>Koordinaten zum gesuchten Ort finden; Gemeinde, Kreis und Gemeindeschlüssel zum gewählten Standort ermitteln</dd>
+      <dt>Übertragen</dt><dd>IP-Adresse, der eingegebene Suchbegriff bzw. die Koordinaten des gewählten Standorts</dd>
+    </dl>
+
+    <h3>Geländehöhe</h3>
+    <dl>
+      <dt>Anbieter</dt><dd><a href="https://open-meteo.com/">Open-Meteo</a> (<a href="https://open-meteo.com/en/terms">Bedingungen und Datenschutz</a>)</dd>
+      <dt>Zweck</dt><dd>Geländehöhe des gewählten Standorts für die Schneelast</dd>
+      <dt>Übertragen</dt><dd>IP-Adresse, Koordinaten des gewählten Standorts</dd>
+    </dl>
+  </section>
+</main>
+
+<footer>
+  Stand: November 2026 · <a href="index.html">Zurück zum Werkzeug</a>
+</footer>
+</body>
+</html>

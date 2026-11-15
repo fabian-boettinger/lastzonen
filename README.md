@@ -15,13 +15,16 @@ Die Seite ermittelt Gemeinde und Geländehöhe des Standorts, ordnet die Zonen �
 
 | Datei | Inhalt |
 |---|---|
-| `index.html` | fertige Seite mit eingebetteten Daten (GitHub Pages); wird erzeugt, nicht von Hand bearbeiten |
+| `index.html` | fertige Seite mit eingebetteten Daten; wird erzeugt, nicht von Hand bearbeiten. Braucht `fonts/` und `vendor/` daneben |
+| `datenschutz.html` | Datenschutzhinweis, in der Fußzeile verlinkt |
 | `page_head.html` | HTML-Gerüst und CSS der Seite |
 | `app.js` | Logik: Namensabgleich, Regelauswahl, Lastformeln, Karte, Ortssuche |
 | `zonen.json` | Zuordnungsregeln für Schnee, Wind und Erdbeben, erzeugt aus den DIBt-Tabellen |
 | `build_zonen.py` | erzeugt `zonen.json` aus den DIBt-Excel-Dateien (benötigt `openpyxl`) |
 | `assemble.py` | baut `index.html` aus `page_head.html`, `zonen.json` und `app.js` |
 | `test_lookup.js` | Stichproben der Zuordnung für ausgewählte Gemeinden |
+| `fonts/` | selbst gehostete Schriften mit `fonts.css` und Lizenzdateien |
+| `vendor/leaflet/` | Kartenbibliothek Leaflet mit CSS, Bildern und Lizenzdatei |
 | `.nojekyll` | schaltet die Jekyll-Verarbeitung von GitHub Pages ab |
 
 Die DIBt-Excel-Dateien liegen nicht im Repository.
@@ -41,19 +44,33 @@ Die DIBt-Excel-Dateien liegen nicht im Repository.
 
 ## Datenquellen
 
-- **Zonenzuordnung:** Tabellen des Deutschen Instituts für Bautechnik (DIBt), <https://www.dibt.de/de/wir-bieten/technische-baubestimmungen>
-  - Zuordnung der Schneelastzonen nach Verwaltungsgrenzen, Stand 07.02.2023
-  - Zuordnung der Windzonen nach Verwaltungsgrenzen, Stand 02.06.2022
-  - Zuordnung der Erdbebenzonen und Untergrundklassen nach Verwaltungsgrenzen, Stand 02.06.2022
-- **Karte:** TopPlusOpen. Kartendarstellung: © [BKG](https://www.bkg.bund.de) (Jahr des Abrufs) [dl-de/by-2-0](https://www.govdata.de/dl-de/by-2-0), Datenquellen: <https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_topplusopen.html>. Ersatzkarte bei Ausfall: © [OpenStreetMap](https://www.openstreetmap.org/copyright)-Mitwirkende.
-- **Ortssuche:** [Nominatim](https://nominatim.org), bei Ausfall [Photon](https://photon.komoot.io) (komoot). Daten © [OpenStreetMap](https://www.openstreetmap.org/copyright)-Mitwirkende, Open Database License (ODbL).
-- **Geländehöhe:** [Open-Meteo.com](https://open-meteo.com/), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); Höhenmodell Copernicus DEM GLO-90, © ESA/Copernicus.
+- Zuordnung der Schneelastzonen nach Verwaltungsgrenzen, DIBt, Stand 07.02.2023
+- Zuordnung der Windzonen nach Verwaltungsgrenzen, DIBt, Stand 02.06.2022
+- Zuordnung der Erdbebenzonen und Untergrundklassen, DIBt, Stand 02.06.2022
+- **Karte:** TopPlusOpen. Kartendarstellung: © [BKG](https://www.bkg.bund.de) (Jahr des Abrufs) [dl-de/by-2-0](https://www.govdata.de/dl-de/by-2-0), Datenquellen: <https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_topplusopen.html>
+- **Ortssuche:** [Nominatim](https://nominatim.org). Daten © [OpenStreetMap](https://www.openstreetmap.org/copyright)-Mitwirkende, Open Database License (ODbL)
+- **Geländehöhe:** [Open-Meteo.com](https://open-meteo.com/), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); Höhenmodell Copernicus DEM GLO-90, © ESA/Copernicus
+
+Die DIBt-Tabellen stehen unter <https://www.dibt.de/de/wir-bieten/technische-baubestimmungen>.
 
 ### Nutzungsbedingungen der Dienste
 
 - **Nominatim** ([Usage Policy](https://operations.osmfoundation.org/policies/nominatim/)): höchstens 1 Anfrage pro Sekunde über alle Nutzer der Seite zusammen, kein Massenbetrieb, keine Suchvorschläge beim Tippen, gleiche Anfragen nicht wiederholen. Die Seite drosselt je Browser auf 1 Anfrage pro Sekunde und merkt sich Ergebnisse für die Sitzung.
 - **Open-Meteo** ([Terms](https://open-meteo.com/en/terms)): kostenlos nur für nicht-kommerzielle Nutzung, unter 10 000 Abrufen pro Tag. Kommerzielle Nutzung erfordert einen bezahlten Zugang.
 - **TopPlusOpen** ([BKG](https://gdz.bkg.bund.de/index.php/default/wmts-topplusopen-wmts-topplus-open.html)): Datenlizenz Deutschland – Namensnennung – Version 2.0, Quellenvermerk wie oben.
-- **OpenStreetMap-Kacheln** ([Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/)) und **Photon**: nur als Ersatz bei Ausfall, maßvolle Nutzung, keine zugesicherte Verfügbarkeit.
+
+## Datenschutz
+
+Beim Laden der Seite geht keine Anfrage an fremde Server: Schriften und Leaflet liegen im Repository. Karte, Ortssuche und Geländehöhe werden erst nach einer Nutzeraktion bei den oben genannten Diensten abgefragt („Karte laden“, Suche, Klick auf die Karte). Einzelheiten stehen in `datenschutz.html`.
+
+## Fremdkomponenten
+
+Die folgenden Komponenten stammen von Dritten und stehen unter deren eigenen Lizenzen; die Lizenzdateien liegen im jeweiligen Ordner.
+
+| Komponente | Version | Lizenz | Ordner |
+|---|---|---|---|
+| Leaflet | 1.9.4 | BSD 2-Clause, © Volodymyr Agafonkin | `vendor/leaflet/` (`LICENSE`) |
+| Source Sans 3 (Adobe) | Google Fonts v20, variabel, Teilsätze latin und latin-ext | SIL Open Font License 1.1 | `fonts/source-sans-3/` (`OFL.txt`) |
+| IBM Plex Mono (IBM) | Google Fonts v23, Schnitt 400, Teilsätze latin und latin-ext | SIL Open Font License 1.1 | `fonts/ibm-plex-mono/` (`OFL.txt`) |
 
 Lizenz: keine. © Fabian Böttinger, alle Rechte vorbehalten.

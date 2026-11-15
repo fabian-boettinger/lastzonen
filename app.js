@@ -239,33 +239,29 @@ $('zfile').addEventListener('change', async e => {
 });
 
 /* ---------- Karte, Suche, Höhe ----------
-   Kacheln: TopPlusOpen (BKG) funktioniert auch beim Öffnen als lokale Datei.
-   Die OSM-Kachelserver verlangen einen Referer und blocken file:// mit 403.
-   Ortssuche: Nominatim (liefert Gemeindeschlüssel), bei Fehler Photon (nur Namen). */
-const OSM_ATTR = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende';
-const map = L.map('map').setView([50.258, 10.964], 10);
-const layers = {
-  'TopPlusOpen (BKG)': L.tileLayer('https://sgx.geodatenzentrum.de/wmts_topplus_open/tile/1.0.0/web/default/WEBMERCATOR/{z}/{y}/{x}.png',
+   Externe Dienste werden erst nach einer Nutzeraktion angesprochen:
+   - Karte TopPlusOpen (BKG): nach „Karte laden“ oder der ersten Ortssuche
+   - Ortssuche Nominatim (liefert den Gemeindeschlüssel) und Geländehöhe Open-Meteo:
+     bei Ortssuche oder Klick auf die Karte */
+const KARTE = 'TopPlusOpen (BKG)';
+let map = null, marker = null;
+
+function initMap() {
+  if (map) return map;
+  $('mapConsent').remove();
+  map = L.map('map').setView([51.2, 10.4], 6);
+  L.tileLayer('https://sgx.geodatenzentrum.de/wmts_topplus_open/tile/1.0.0/web/default/WEBMERCATOR/{z}/{y}/{x}.png',
     {maxZoom: 18, attribution: 'Kartendarstellung: © <a href="https://www.bkg.bund.de">BKG</a> (' + new Date().getFullYear()
       + ') <a href="https://www.govdata.de/dl-de/by-2-0">dl-de/by-2-0</a>, '
-      + '<a href="https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_topplusopen.html">Datenquellen</a>'}),
-  'OpenStreetMap (nur gehostet)': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {maxZoom: 19, attribution: OSM_ATTR})
-};
-const fallback = layers['OpenStreetMap (nur gehostet)'];
-let baseOk = false;
-const base = layers['TopPlusOpen (BKG)'];
-base.on('tileload', () => { baseOk = true; });
-base.on('tileerror', () => {
-  if (baseOk || map.hasLayer(fallback)) return;
-  map.removeLayer(base); fallback.addTo(map);
-});
-base.addTo(map);
-L.control.layers(layers, null, {position: 'topright'}).addTo(map);
-L.control.scale({imperial: false, position: 'bottomleft'}).addTo(map);
-window.addEventListener('beforeprint', () => map.invalidateSize({pan: false}));
-window.addEventListener('afterprint', () => map.invalidateSize({pan: false}));
-let marker = null;
+      + '<a href="https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_topplusopen.html">Datenquellen</a>'}).addTo(map);
+  L.control.scale({imperial: false, position: 'bottomleft'}).addTo(map);
+  map.on('click', e => setLocation(e.latlng.lat, e.latlng.lng));
+  return map;
+}
+/* stopPropagation: der Klick auf die Schaltfläche darf nicht als Klick auf die neue Karte gelten. */
+$('mapLoad').addEventListener('click', e => { e.stopPropagation(); initMap(); });
+window.addEventListener('beforeprint', () => { if (map) map.invalidateSize({pan: false}); });
+window.addEventListener('afterprint', () => { if (map) map.invalidateSize({pan: false}); });
 
 async function getJSON(url) {
   const r = await fetch(url);
@@ -289,50 +285,29 @@ function nominatim(url) {
 
 /* Liefert {land, regbez, kf, kreis, gem, ags, stateName, countyName, quelle} oder null */
 async function reverseGeocode(lat, lon) {
-  try {
-    const res = await nominatim(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&addressdetails=1&extratags=1&accept-language=de&lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}`);
-    const a = res.address;
-    if (a) {
-      const agsRaw = (res.extratags || {})['de:amtlicher_gemeindeschluessel'] || '';
-      const gem = a.city || a.town || a.village || a.municipality || res.name || '';
-      return {
-        land: LAND[a.state] || (a.city === 'Berlin' ? 'BE' : a.city === 'Hamburg' ? 'HH' : null),
-        regbez: a.state_district || '', kf: !a.county, kreis: a.county || gem, gem,
-        ags: /^\d{8}$/.test(agsRaw) ? agsRaw : null, stateName: a.state || '', countyName: a.county || '', quelle: 'Nominatim'
-      };
-    }
-  } catch (e) { /* weiter mit Photon */ }
-  try {
-    const res = await getJSON(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}&lang=de&limit=1`);
-    const p = res.features && res.features[0] && res.features[0].properties;
-    if (p) {
-      const gem = p.city || p.town || p.village || p.name || '';
-      const state = p.state || '';
-      return {
-        land: LAND[state] || (gem === 'Berlin' ? 'BE' : gem === 'Hamburg' ? 'HH' : null),
-        regbez: '', kf: !p.county, kreis: p.county || gem, gem, ags: null,
-        stateName: state, countyName: p.county || '', quelle: 'Photon'
-      };
-    }
-  } catch (e) { /* nichts gefunden */ }
-  return null;
+  const res = await nominatim(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&addressdetails=1&extratags=1&accept-language=de&lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}`);
+  const a = res.address;
+  if (!a) return null;
+  const agsRaw = (res.extratags || {})['de:amtlicher_gemeindeschluessel'] || '';
+  const gem = a.city || a.town || a.village || a.municipality || res.name || '';
+  return {
+    land: LAND[a.state] || (a.city === 'Berlin' ? 'BE' : a.city === 'Hamburg' ? 'HH' : null),
+    regbez: a.state_district || '', kf: !a.county, kreis: a.county || gem, gem,
+    ags: /^\d{8}$/.test(agsRaw) ? agsRaw : null, stateName: a.state || '', countyName: a.county || '', quelle: 'Nominatim'
+  };
 }
 
 async function searchPlace(q) {
-  try {
-    const r = await nominatim(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=de&limit=1&accept-language=de&q=${encodeURIComponent(q)}`);
-    if (r.length) return [+r[0].lat, +r[0].lon];
-  } catch (e) { /* weiter mit Photon */ }
-  const r = await getJSON(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lang=de&limit=1&bbox=5.8,47.2,15.1,55.1`);
-  const f = r.features && r.features[0];
-  return f ? [f.geometry.coordinates[1], f.geometry.coordinates[0]] : null;
+  const r = await nominatim(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=de&limit=1&accept-language=de&q=${encodeURIComponent(q)}`);
+  return r.length ? [+r[0].lat, +r[0].lon] : null;
 }
 
 async function setLocation(lat, lon) {
+  initMap();
   if (marker) marker.setLatLng([lat, lon]); else marker = L.marker([lat, lon]).addTo(map);
   $('locText').textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)} · wird ermittelt …`;
   const [elev, rev] = await Promise.allSettled([
-    getJSON(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`),
+    getJSON(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(5)}&longitude=${lon.toFixed(5)}`),
     reverseGeocode(lat, lon)
   ]);
   if (elev.status === 'fulfilled' && elev.value.elevation) $('alt').value = Math.round(elev.value.elevation[0]);
@@ -342,21 +317,19 @@ async function setLocation(lat, lon) {
       + `<br><span style="color:var(--muted);font-family:var(--mono);font-size:.82rem">${lat.toFixed(5)}, ${lon.toFixed(5)} · A = ${$('alt').value} m ü. NN`
       + `${loc.ags ? ' · AGS ' + loc.ags : ''} · ${loc.quelle}</span>`;
   } else {
-    $('locText').textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)} · Gemeinde nicht ermittelbar (Ortsdienste nicht erreichbar)`;
+    $('locText').textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)} · Gemeinde nicht ermittelbar (Ortssuche nicht erreichbar) – Zonen manuell wählen`;
   }
-  const layerName = Object.keys(layers).find(k => map.hasLayer(layers[k])) || '';
-  $('mapcap').textContent = `Lageplan: ${loc ? loc.gem + ', ' : ''}${lat.toFixed(5)} N, ${lon.toFixed(5)} O · Kartengrundlage ${layerName}`;
+  $('mapcap').textContent = `Lageplan: ${loc ? loc.gem + ', ' : ''}${lat.toFixed(5)} N, ${lon.toFixed(5)} O · Kartengrundlage ${KARTE}`;
   lastLoc = loc;
   applyZones(loc);
 }
-map.on('click', e => setLocation(e.latlng.lat, e.latlng.lng));
 $('searchForm').addEventListener('submit', async e => {
   e.preventDefault();
   const q = $('q').value.trim(); if (!q) return;
   try {
     const ll = await searchPlace(q);
     if (!ll) { $('locText').textContent = 'Ort nicht gefunden.'; return; }
-    map.setView(ll, 12); setLocation(ll[0], ll[1]);
+    initMap().setView(ll, 12); setLocation(ll[0], ll[1]);
   } catch (err) { $('locText').textContent = 'Ortssuche nicht erreichbar.'; }
 });
 $('printBtn').addEventListener('click', () => window.print());
@@ -364,4 +337,3 @@ $('printBtn').addEventListener('click', () => window.print());
 $('bkgJahr').textContent = new Date().getFullYear();
 setTableState();
 calc();
-setLocation(50.2584, 10.9629);
