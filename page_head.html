@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lastzonen Deutschland</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: zweispaltig – Karte links, Eingaben + Ergebnisse rechts; einspaltig auf dem Handy. */
+:root{
+  --bg:#f3f5f7; --panel:#ffffff; --fg:#1b2430; --muted:#5b6878; --line:#d5dce4;
+  --accent:#b8860b; --accent-bg:#fbf3dc; --warn:#a33a2a;
+  --sans:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12171d; --panel:#1a212a; --fg:#e4e9ef; --muted:#93a1b1; --line:#2c3743;
+  --accent:#e0b44a; --accent-bg:#2b2617; --warn:#e07a68; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171d; --panel:#1a212a; --fg:#e4e9ef; --muted:#93a1b1; --line:#2c3743;
+  --accent:#e0b44a; --accent-bg:#2b2617; --warn:#e07a68; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans)}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;padding-block:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  border-bottom:1px solid var(--line);background:var(--panel)}
+header h1{margin:0;font-size:1.25rem;font-weight:700;letter-spacing:.01em}
+header span{color:var(--muted);font-size:.9rem}
+main{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;padding-block:16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (max-width:860px){main{grid-template-columns:minmax(0,1fr)}}
+.mapcol{display:flex;flex-direction:column;gap:10px;min-width:0}
+#map{height:min(70vh,640px);min-height:340px;border:1px solid var(--line);border-radius:6px}
+.search{display:flex;gap:8px}
+.search input{flex:1;min-width:0}
+input,select,button{font:inherit;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:7px 10px}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button{cursor:pointer;font-weight:600}
+button.primary{background:var(--accent);border-color:var(--accent);color:#1b1404}
+.side{display:flex;flex-direction:column;gap:16px;min-width:0}
+section{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+section h2{margin:0 0 10px;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
+@media (max-width:420px){.grid{grid-template-columns:minmax(0,1fr)}}
+label{display:flex;flex-direction:column;gap:3px;font-size:.88rem;color:var(--muted)}
+label.check{flex-direction:row;align-items:center;gap:8px;color:var(--fg)}
+label input,label select{color:var(--fg)}
+.loc{font-size:.95rem}
+.loc b{font-weight:600}
+.hint{font-size:.85rem;color:var(--muted);margin:8px 0 0}
+.hint.warn{color:var(--warn)}
+.hint.ok{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+td{padding:6px 0;border-bottom:1px solid var(--line);vertical-align:baseline}
+td:first-child{color:var(--muted);padding-right:10px}
+td.v{text-align:right;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}
+tr.key td.v{font-weight:500;color:var(--fg);background:var(--accent-bg);padding-inline:6px}
+.notes{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px;font-size:.9rem}
+.notes li.warn{color:var(--warn)}
+.notes .src{color:var(--muted);font-size:.82rem}
+.notes a,footer a{color:inherit}
+.tag{display:inline-block;font-family:var(--mono);font-size:.75rem;padding:1px 6px;border-radius:3px;border:1px solid var(--line);color:var(--muted);margin-left:4px}
+.formula{font-size:.85rem;color:var(--muted);margin:8px 0 0;overflow-x:auto;white-space:pre}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+footer{padding-block:4px 20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  color:var(--muted);font-size:.8rem;max-width:80ch}
+#printhead{display:none}
+#mapcap{display:none}
+@media print{
+  @page{size:A4;margin:15mm}
+  header,.actions,footer .noprint,.search,.mapcol .hint,.leaflet-control-zoom,.leaflet-control-layers{display:none!important}
+  main{display:flex;flex-direction:column;gap:6mm;padding:0}
+  #printhead{display:block;order:0}
+  .mapcol{order:1;break-inside:avoid}
+  .side{order:2}
+  #map{width:170mm!important;height:85mm!important;min-height:0;border:0.3mm solid #888;border-radius:0}
+  #mapcap{display:block;font-size:9pt;color:#444}
+  section{border:none;padding:0 0 8px;break-inside:avoid}
+  body{background:#fff;color:#000}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Lastzonen Deutschland</h1>
+  <span>Schnee nach DIN EN 1991-1-3/NA · Wind nach DIN EN 1991-1-4/NA · Erdbeben nach DIN 4149 · Prototyp</span>
+</header>
+
+<main>
+  <div id="printhead"><h1 style="margin:0">Lastannahmen Schnee, Wind und Erdbeben</h1><div id="printdate"></div></div>
+  <div class="mapcol">
+    <form class="search" id="searchForm">
+      <input id="q" type="search" placeholder="Ort, PLZ oder Adresse" value="Coburg" autocomplete="off">
+      <button class="primary" type="submit">Suchen</button>
+    </form>
+    <div id="map" aria-label="Karte zur Standortwahl"></div>
+    <p class="hint">Auf die Karte klicken, um den Standort zu setzen. Höhe und Gemeinde werden automatisch ermittelt.</p>
+    <p id="mapcap"></p>
+  </div>
+
+  <div class="side">
+
+    <section>
+      <h2>Standort</h2>
+      <div class="loc" id="locText">Noch kein Standort gewählt.</div>
+      <p class="hint" id="zoneHint"></p>
+    </section>
+
+    <section>
+      <h2>Eingaben</h2>
+      <div class="grid">
+        <label>Geländehöhe A [m ü. NN]<input id="alt" type="number" step="1" value="300"></label>
+        <label>Bauwerkshöhe z [m]<input id="z" type="number" step="0.5" min="0" value="10"></label>
+        <label>Schneelastzone<select id="sz">
+          <option value="1">1</option><option value="1a">1a</option>
+          <option value="2" selected>2</option><option value="2a">2a</option><option value="3">3</option>
+          <option value="3a">3a (Tabelle BY)</option><option value=">3">&gt; 3 (Sonderlage)</option></select></label>
+        <label>Windzone<select id="wz">
+          <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+        <label>Geländeprofil Wind<select id="terrain">
+          <option value="binnen" selected>Binnenland (Mischprofil II/III)</option>
+          <option value="kueste">Küstennah, Ostseeinseln (Mischprofil I/II)</option>
+          <option value="inseln">Nordseeinseln (Kategorie I)</option></select></label>
+        <label class="check"><input id="tiefland" type="checkbox"> Norddeutsches Tiefland</label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Schnee</h2>
+      <table><tbody id="snowOut"></tbody></table>
+      <p class="formula" id="snowF"></p>
+    </section>
+
+    <section>
+      <h2>Wind</h2>
+      <table><tbody id="windOut"></tbody></table>
+      <p class="formula" id="windF"></p>
+    </section>
+
+    <section>
+      <h2>Erdbeben</h2>
+      <table><tbody id="eqOut"></tbody></table>
+      <p class="hint" id="eqHint"></p>
+    </section>
+
+    <section>
+      <h2>Zuordnung und Hinweise</h2>
+      <ul class="notes" id="notes"><li>Standort wählen, um die Zonen zuzuordnen.</li></ul>
+      <p class="hint" id="tableState"></p>
+      <div class="actions" style="margin-top:10px">
+        <label style="flex-direction:row;align-items:center;gap:8px;color:var(--fg)">
+          <span>Andere zonen.json laden</span><input id="zfile" type="file" accept=".json,application/json">
+        </label>
+        <button type="button" id="printBtn">Protokoll drucken</button>
+      </div>
+    </section>
+
+    <section id="quellen">
+      <h2>Datenquellen</h2>
+      <ul class="notes">
+        <li>Zonenzuordnung: Tabellen des Deutschen Instituts für Bautechnik (<a href="https://www.dibt.de/de/wir-bieten/technische-baubestimmungen">DIBt</a>) –
+          Zuordnung der Schneelastzonen nach Verwaltungsgrenzen (Stand <span id="stand-schnee">07.02.2023</span>),
+          Zuordnung der Windzonen nach Verwaltungsgrenzen (Stand <span id="stand-wind">02.06.2022</span>),
+          Zuordnung der Erdbebenzonen und Untergrundklassen nach Verwaltungsgrenzen (Stand <span id="stand-erdbeben">02.06.2022</span>).</li>
+        <li>Karte: TopPlusOpen. Kartendarstellung: © <a href="https://www.bkg.bund.de">BKG</a> (<span id="bkgJahr">2026</span>)
+          <a href="https://www.govdata.de/dl-de/by-2-0">dl-de/by-2-0</a>, Datenquellen:
+          <a href="https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_topplusopen.html">sgx.geodatenzentrum.de/…/datenquellen_topplusopen.html</a>.
+          Ersatzkarte bei Ausfall: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende.</li>
+        <li>Ortssuche: <a href="https://nominatim.org">Nominatim</a>, bei Ausfall <a href="https://photon.komoot.io">Photon</a> (komoot).
+          Daten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende, Open Database License (ODbL).</li>
+        <li>Geländehöhe: <a href="https://open-meteo.com/">Höhendaten von Open-Meteo.com</a>
+          (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>), Copernicus DEM GLO-90, © ESA/Copernicus.</li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <b>Prototyp, ungeprüft, keine Gewähr, ersetzt keine eigene Prüfung der Zonenzuordnung.</b>
+  Zonenzuordnung verbindlich nach den DIBt-Tabellen und dem Landesrecht prüfen.
+  <span class="noprint">Karte: TopPlusOpen © <a href="https://www.bkg.bund.de">BKG</a> <a href="https://www.govdata.de/dl-de/by-2-0">dl-de/by-2-0</a> ·
+  Ortssuche: Nominatim, Daten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende ·
+  Geländehöhe: <a href="https://open-meteo.com/">Open-Meteo.com</a> · Einzelheiten unter <a href="#quellen">Datenquellen</a>.</span>
+</footer>
+
